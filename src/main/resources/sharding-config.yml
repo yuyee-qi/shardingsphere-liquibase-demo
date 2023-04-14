@@ -1,0 +1,61 @@
+#databaseName: a_demo_db
+
+mode:
+  type: Standalone
+  repository:
+    type: JDBC
+    props:
+      MySQL: MySQL
+      jdbc_url: jdbc:mysql://localhost:3306/a_demo_db?serverTimezone=UTC&useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+      username: root
+      password: 12345678
+
+dataSources:
+  a_demo_db:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://localhost:3306/a_demo_db?serverTimezone=UTC&useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    username: root
+    password: 12345678
+    maxPoolSize: 10
+
+rules:
+  - !SHARDING
+    tables:
+      t_order:
+        actualDataNodes: a_demo_db.t_order_$->{0..1}
+        tableStrategy:
+          standard:
+            shardingColumn: order_id
+            shardingAlgorithmName: t_order_inline
+        keyGenerateStrategy:
+          column: order_id
+          keyGeneratorName: snowflake_generator
+      t_order_item:
+        actualDataNodes: a_demo_db.t_order_item_$->{0..1}
+        tableStrategy:
+          standard:
+            shardingColumn: order_id
+            shardingAlgorithmName: t_order_item_inline
+        keyGenerateStrategy:
+          column: order_item_id
+          keyGeneratorName: snowflake_generator
+    bindingTables:
+      - t_order,t_order_item
+    broadcastTables:
+      - t_address
+    shardingAlgorithms:
+      t_order_inline:
+        type: INLINE
+        props:
+          algorithm-expression: t_order_$->{order_id % 2}
+      t_order_item_inline:
+        type: INLINE
+        props:
+          algorithm-expression: t_order_item_$->{order_id % 2}
+    keyGenerators:
+      snowflake_generator:
+        type: SNOWFLAKE
+
+props:
+  sql-show: true
